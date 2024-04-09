@@ -189,3 +189,15 @@ def rand_split_log_normal(shape, loc, scale_1, scale_2, device='cpu', dtype=torc
     n_right = n * scale_2 + loc
     ratio = scale_1 / (scale_1 + scale_2)
     return torch.where(u < ratio, n_left, n_right).exp()
+
+# Function to sample from discrete values
+def rand_discrete(shape, values, device='cpu', dtype=torch.float32):
+    """Draws samples from the given discrete values."""
+    indices = torch.randint(0, len(values), shape, device=device)
+    samples = torch.index_select(values, 0, indices).to(dtype)
+    return samples
+
+
+def rand_uniform(shape, min_value, max_value, device='cpu', dtype=torch.float32):
+    """Draws samples from a uniform distribution."""
+    return torch.rand(shape, device=device, dtype=dtype) * (max_value - min_value) + min_value
