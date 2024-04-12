@@ -23,10 +23,11 @@ class GCDenoiser(nn.Module):
         inner_model: The inner model used for denoising.
         sigma_data: The data sigma for scalings (default: 1.0).
     """
-    def __init__(self, inner_model, sigma_data=1.):
+    def __init__(self, inner_model: nn.Module, device, sigma_data=1.):
         super().__init__()
-        self.inner_model = hydra.utils.instantiate(inner_model)
+        self.inner_model = inner_model
         self.sigma_data = sigma_data
+        self.device = device
 
     def get_scalings(self, sigma):
         """

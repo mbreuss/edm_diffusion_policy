@@ -21,7 +21,7 @@ class DiffusionDecoder(nn.Module):
         self,
         out_features: int,
         criterion: str,
-        model: DictConfig,
+        model: nn.Module,
         sampler_type: str,
         rho: float,
         num_sampling_steps: int,
@@ -43,7 +43,7 @@ class DiffusionDecoder(nn.Module):
         self.act_window_size = action_window_size
         self.obs_window_size = obs_window_size
         self.window_size = self.act_window_size + self.obs_window_size  -1 
-        self.model = hydra.utils.instantiate(model, device=device)
+        self.model = model
         self.rho = rho
         self.sampler_type = sampler_type
         self.num_sampling_steps = num_sampling_steps
