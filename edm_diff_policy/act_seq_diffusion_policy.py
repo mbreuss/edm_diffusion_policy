@@ -43,7 +43,7 @@ class DiffusionDecoder(nn.Module):
         self.act_window_size = action_window_size
         self.obs_window_size = obs_window_size
         self.window_size = self.act_window_size + self.obs_window_size  -1 
-        self.model = model
+        self.model = hydra.utils.instantiate(model, device=device)
         self.rho = rho
         self.sampler_type = sampler_type
         self.num_sampling_steps = num_sampling_steps
@@ -88,10 +88,7 @@ class DiffusionDecoder(nn.Module):
         if len(latent_goal.shape) == 2:
             goal = einops.rearrange(goal, 'b d -> 1 b d')
 
-        if self.use_same_noise:
-            x = torch.zeros((len(latent_goal), self.act_window_size, self.out_features), device=self.device) * self.sigma_max
-        else:
-            x = torch.randn((len(latent_goal), self.act_window_size, self.out_features), device=self.device) * self.sigma_max
+        x = torch.randn((len(latent_goal), self.act_window_size, self.out_features), device=self.device) * self.sigma_max
         actions = self.sample_loop(sigmas, x, input_state, latent_goal, self.sampler_type, extra_args)
 
         return actions, None
@@ -259,3 +256,6 @@ class DiffusionDecoder(nn.Module):
         elif noise_schedule_type == 'iddpm':
             return get_iddpm_sigmas(n_sampling_steps, self.sigma_min, self.sigma_max, device=self.device)
         raise ValueError('Unknown noise schedule type')
+    
+    def get_params(self):
+        return self.model.get_params()
