@@ -59,8 +59,8 @@ class DiffusionDecoder(nn.Module):
     
     def forward(  # type: ignore
         self,
-        perceptual_emb: torch.Tensor,
-        latent_goal: torch.Tensor,
+        perceptual_emb, # dict or torch.Tensor
+        latent_goal, # dict or torch.Tensor
         inference: Optional[bool] = False,
         extra_args={}
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -70,25 +70,33 @@ class DiffusionDecoder(nn.Module):
             sampling_steps = self.num_sampling_steps
         else:
             sampling_steps = 10
-        # perceptual_emb = perceptual_emb[..., slice(*self.perceptual_emb_slice)]
         self.model.eval()
         # batch_size, seq_len = perceptual_emb.shape[0], perceptual_emb.shape[1]
-        # latent_plan = latent_plan.unsqueeze(1).expand(-1, seq_len, -1) if latent_plan.nelement() > 0 else latent_plan
-        if len(latent_goal.shape) < len(perceptual_emb['state_images'].shape if isinstance(perceptual_emb, dict) else perceptual_emb.shape): 
-            latent_goal = latent_goal.unsqueeze(1) # .expand(-1, seq_len, -1)
         
         if self.obs_window_size > 1:
             # rearrange from 2d -> sequence
-            self.obs_context.append(perceptual_emb) # this automatically manages the number of allowed observations
+            if isinstance(perceptual_emb, dict):
+                pass # !ToDo! FixMe
+            else:
+                self.obs_context.append(perceptual_emb) # this automatically manages the number of allowed observations
             input_state = torch.concat(tuple(self.obs_context), dim=1)
         else:
             input_state = perceptual_emb
 
         sigmas = self.get_noise_schedule(sampling_steps, self.noise_scheduler)
-        if len(latent_goal.shape) == 2:
-            goal = einops.rearrange(goal, 'b d -> 1 b d')
+        latent_goal_length = 0
+        if isinstance(latent_goal, dict):
+            for latent_goal_key, latent_goal_value in latent_goal.items():
+                if len(latent_goal_value.shape) == 2:
+                    latent_goal[latent_goal_key] = einops.rearrange(latent_goal_value, 'b d -> 1 b d')
+                latent_goal_length += len(latent_goal_value)
+        else:
+            if len(latent_goal.shape) == 2:
+                goal = einops.rearrange(goal, 'b d -> 1 b d')
+            latent_goal_length = len(latent_goal)
 
-        x = torch.randn((len(latent_goal), self.act_window_size, self.out_features), device=self.device) * self.sigma_max
+        
+        x = torch.randn((latent_goal_length, self.act_window_size, self.out_features), device=self.device) * self.sigma_max
         actions = self.sample_loop(sigmas, x, input_state, latent_goal, self.sampler_type, extra_args)
 
         return actions, None
@@ -105,7 +113,10 @@ class DiffusionDecoder(nn.Module):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: A tuple containing the predicted loss tensor and predicted actions tensor.
         """
-        batch_size = latent_goal.shape[0] #, perceptual_emb.shape[1]
+        if isinstance(latent_goal, dict):
+            batch_size = next(iter(latent_goal.values())).shape[0]
+        else:
+            batch_size = latent_goal.shape[0] #, perceptual_emb.shape[1]
         sampling_steps = self.num_sampling_steps
         sigmas = self.get_noise_schedule(sampling_steps, self.noise_scheduler)
         x = torch.randn((batch_size, self.act_window_size, self.out_features), device=self.device) * self.sigma_max
