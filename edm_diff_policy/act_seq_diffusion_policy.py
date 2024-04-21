@@ -270,3 +270,9 @@ class DiffusionDecoder(nn.Module):
     
     def get_params(self):
         return self.model.get_params()
+    
+    def get_inner_model(self):
+        return self.model.get_inner_model()
+
+    def set_inner_model(self, model):
+        self.model.set_inner_model(model)

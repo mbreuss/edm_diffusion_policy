@@ -99,3 +99,9 @@ class GCDenoiser(nn.Module):
 
     def get_params(self):
         return self.inner_model.parameters()
+    
+    def get_inner_model(self):
+        return self.inner_model
+
+    def set_inner_model(self, model):
+        self.inner_model = model
