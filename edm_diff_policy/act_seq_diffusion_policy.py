@@ -101,7 +101,7 @@ class DiffusionDecoder(nn.Module):
 
         return actions, None
 
-    def loss_and_act(
+    def evaluate(
         self,
         perceptual_emb: torch.Tensor,
         latent_goal: torch.Tensor,
@@ -122,7 +122,7 @@ class DiffusionDecoder(nn.Module):
         x = torch.randn((batch_size, self.act_window_size, self.out_features), device=self.device) * self.sigma_max
         pred_actions = self.sample_loop(sigmas, x, perceptual_emb, latent_goal, self.sampler_type, extra_args)
         pred_loss = self.criterion(pred_actions, actions)
-        return pred_loss, pred_actions
+        return pred_loss
 
     def loss(
         self,
@@ -137,7 +137,7 @@ class DiffusionDecoder(nn.Module):
         sigmas = self.make_sample_density()(shape=(len(actions),), device=self.device).to(self.device)
         noise = torch.randn_like(actions).to(self.device)
         loss, _ = self.model.loss(perceptual_emb, actions, latent_goal, noise, sigmas)
-        return loss, sigmas, noise
+        return loss
     
     def make_sample_density(self):
         """ 
@@ -267,9 +267,6 @@ class DiffusionDecoder(nn.Module):
         elif noise_schedule_type == 'iddpm':
             return get_iddpm_sigmas(n_sampling_steps, self.sigma_min, self.sigma_max, device=self.device)
         raise ValueError('Unknown noise schedule type')
-    
-    def get_params(self):
-        return self.model.get_params()
     
     def get_inner_model(self):
         return self.model.get_inner_model()

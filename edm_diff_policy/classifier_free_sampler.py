@@ -46,9 +46,6 @@ class ClassifierFreeSampleModel(nn.Module):
             
             return out_uncond + self.cond_lambda * (out - out_uncond)
     
-    def get_params(self):
-        return self.model.get_params()
-    
 
 class CompositionalBeso(nn.Module):
 

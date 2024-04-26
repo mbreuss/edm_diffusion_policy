@@ -96,9 +96,6 @@ class GCDenoiser(nn.Module):
         """
         c_skip, c_out, c_in = [append_dims(x, action.ndim) for x in self.get_scalings(sigma)]
         return self.inner_model.forward_enc_only(state, action * c_in, goal, sigma, **kwargs)
-
-    def get_params(self):
-        return self.inner_model.parameters()
     
     def get_inner_model(self):
         return self.inner_model
