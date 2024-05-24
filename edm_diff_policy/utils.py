@@ -5,6 +5,30 @@ import numpy as np
 import einops
 
 
+
+def modulate(x, shift, scale):
+    return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+
+
+class NoiseCondLinearLayer(nn.Module):
+    """
+    The final layer of DiT.
+    """
+    def __init__(self, hidden_size, output_size):
+        super().__init__()
+        self.linear = nn.Linear(hidden_size, output_size, bias=True)
+        self.adaLN_modulation = nn.Sequential(
+            nn.SiLU(),
+            nn.Linear(hidden_size, 2 * hidden_size, bias=True)
+        )
+
+    def forward(self, x, c):
+        shift, scale = self.adaLN_modulation(c).chunk(2, dim=1)
+        x = modulate(x, shift, scale)
+        x = self.linear(x)
+        return x
+
+
 def return_time_sigma_embedding_model(embedding_type, time_embed_dim, device):
     '''
     Method returns an embedding model given the chosen type
