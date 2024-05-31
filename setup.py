@@ -10,6 +10,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         "torch",
+        "torchsde",
+        "torchdiffeq",
         "einops",
         "numpy",
         "omegaconf"
